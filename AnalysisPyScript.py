@@ -201,7 +201,7 @@ def main():
     #In this section, the Rating for each suited polygon will be calculated
     #----------------------------------------------------------------------
     #do a weighted overlay with the Size- (x2), Soil- (x3), Landuse- (x6) and heights-classes (x1)
-    gscript.run_command('r.mapcalc', overwrite=True, expression="RatingRaster = DEMclassified@PERMANENT + 2 * SizeClassRaster@PERMANENT +3 * SoilClassRast@PERMANENT + 6 * LanduseClassRast@PERMANENT")
+    gscript.run_command('r.mapcalc', overwrite=True, expression="RatingRaster = ( DEMclassified@PERMANENT + 2 * SizeClassRaster@PERMANENT + 3 * SoilClassRast@PERMANENT + 6 * LanduseClassRast@PERMANENT ) * 100 / 48")
 
     #extract the polygons which are big enough out of the feasable Areas
     gscript.run_command('v.extract', overwrite=True, input='SizeReclass@PERMANENT', where="cat !=99", output='AreasToRateClassified')
@@ -213,7 +213,8 @@ def main():
     #set colortable, so the best areas are colored in green, the worst in red
     gscript.run_command('v.colors', map='PossibleAreas@PERMANENT', use='attr', column='Rating_average', color='ryg')
     
-    #display result in active graphics frame
+    #start a new monitor and display result in active graphics frame
+    gscript.run_command('d.mon', resolution='2', start='wx0')
     gscript.run_command('d.vect', map='PossibleAreas@PERMANENT')
 
 
