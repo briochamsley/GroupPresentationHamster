@@ -4,7 +4,7 @@ import grass.script as gscript
 
 def main():
     #Set Workspace, so you need to change only this path if you're changing folders 
-    data_dir=r'D:\Dokumente\Uni\Master\MSc-Sem1\FOSS\Projekt\TestGruppe\\'
+    data_dir=r'D:\Dokumente\Uni\FOSS\Data\\'
 
 
     ## This Section will import the Study Area and set the Region according to this file
