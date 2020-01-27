@@ -99,7 +99,7 @@ def main():
     
     #Extract the unsuitable heights and create an attribute table for the new layer
     gscript.run_command('v.extract', overwrite=True, flags='d', input='DEMvector@PERMANENT', where="(value = '0')", output='UnsuitableHeights')
-    gscript.run_command('v.db.addtable', map='UnsuitableHeights@PERMANENT')
+    #gscript.run_command('v.db.addtable', map='UnsuitableHeights@PERMANENT')
 
 
     #In this section, all areas which need to be excluded from the rating will be cliped out of the study area
