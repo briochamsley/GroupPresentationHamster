@@ -1,3 +1,99 @@
+:: download the data for the study area
+wget https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/gadm36_DEU_gpkg.zip 
+:: unzip the downloaded data
+tar -xf gadm36_DEU_gpkg.zip
+:: reproject the unzipped data
+ogr2ogr -t_srs EPSG:32632 gadm36_DEUReprojected.gpkg gadm36_DEU.gpkg
+:: create a new file with the named regions only
+ogr2ogr -sql "SELECT * FROM gadm36_DEU_2 WHERE GID_2 in ('DEU.7.1_1','DEU.1.26_1','DEU.1.15_1','DEU.1.35_1')" RegionenSelect.gpkg gadm36_DEUReprojected.gpkg
+:: merge the regions into the study area
+ogr2ogr StudyArea.gpkg RegionenSelect.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geometry FROM 'SELECT'"
+:: Write the query for the overpass download
+@echo [out:xml][maxsize:2000000000];(way["building"](48.803,7.3333,50.087,9.61215););(._;^>;);out; >queryBuildings.txt
+:: use the text file with the query to download the data from the api
+wget -t 0 --post-file=queryBuildings.txt http://overpass-api.de/api/interpreter --output-document=DownloadBuilding.osm
+:: Wait 15 seconds to start the next request
+timeout /T 30
+:: repeat the last three steps for different queries
+@echo [out:xml][maxsize:2000000000];(way[highway~"^(tertiary|motorway|trunk|secondary|residential|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link|living_street|raceway)"](48.803,7.3333,50.087,9.61215););(._;^>;);out; >queryRoad.txt
+wget  -t 0 --post-file=queryRoad.txt http://overpass-api.de/api/interpreter --output-document=DownloadRoads.osm
+timeout /T 30
+@echo [out:xml][maxsize:2000000000];(way["railway"](48.803,7.3333,50.087,9.61215););(._;^>;);out; >queryRail.txt
+wget  -t 0 --post-file=queryRail.txt http://overpass-api.de/api/interpreter --output-document=DownloadRail.osm
+timeout /T 30
+@echo [out:xml][maxsize:2000000000];(way["landuse"](48.803,7.3333,50.087,9.61215););(._;^>;);out; >queryLanduse.txt
+wget  -t 0 --post-file=queryLanduse.txt http://overpass-api.de/api/interpreter --output-document=DownloadLanduse.osm
+:: copy all features which are lines into a new file, so the new file contains one instead of 5 files only
+ogr2ogr -sql "SELECT * FROM lines" -t_srs EPSG:32632 -f GPKG Roads.gpkg DownloadRoads.osm
+ogr2ogr -sql "SELECT * FROM lines" -t_srs EPSG:32632 -f GPKG Rail.gpkg DownloadRail.osm
+:: copy all features which are multipolygons into a new file, so the new file contains one instead of 5 files only
+ogr2ogr -sql "SELECT * FROM multipolygons" -t_srs EPSG:32632 -f GPKG Buildings.gpkg DownloadBuilding.osm
+ogr2ogr -sql "SELECT * FROM multipolygons" -t_srs EPSG:32632 -f GPKG Landuse.gpkg DownloadLanduse.osm
+:: download the soilmap data, unzip and reproject it
+wget https://download.bgr.de/bgr/boden/BUEK250/shp/buek250_mg_utm_v55.zip
+tar -xf buek250_mg_utm_v55.zip
+ogr2ogr -t_srs EPSG:32632 -f GPKG soilmap.gpkg buek250_mg_utm_v55.shp
+:: download the SRTM data and unzip them
+wget http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/srtm_38_03.zip
+tar -xf srtm_38_03.zip
+wget http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/srtm_38_02.zip
+tar -xf srtm_38_02.zip
+wget http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/srtm_39_02.zip
+tar -xf srtm_39_02.zip
+wget http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/srtm_39_03.zip
+tar -xf srtm_39_03.zip
+:: merge the SRTM tiles and reproject them
+gdalwarp -t_srs EPSG:32632 srtm_38_02.tif srtm_38_03.tif srtm_39_03.tif srtm_39_02.tif dem.tif
+::Donwload nature reserves from OSM and copy all features which are multipolygons into a new file, so the new file contains one instead of 5 files only
+@echo [out:xml][maxsize:2000000000];(way[boundary~"^(national_park|protected_area)"](48.803,7.3333,50.087,9.61215);way[leisure~"^(nature_reserve)"](48.803,7.3333,50.087,9.61215););(._;^>;);out; >queryReserve.txt
+wget  -t 0 --post-file=queryReserve.txt http://overpass-api.de/api/interpreter --output-document=DownloadReserves.osm
+ogr2ogr -sql "SELECT * FROM multipolygons" -t_srs EPSG:32632 -f GPKG Reserves.gpkg DownloadReserves.osm
+:: delete all unnecessary files which were created during the process
+del gadm36_DEU_gpkg.zip 
+del gadm36_DEU.gpkg
+del gadm36_DEUReprojected.gpkg
+del RegionenSelect.gpkg
+del DownloadRoads.osm
+del DownloadRail.osm
+del DownloadBuilding.osm
+del DownloadLanduse.osm
+del DownloadReserves.osm
+del queryRail.txt
+del queryBuildings.txt
+del queryLanduse.txt
+del queryRoad.txt
+del queryReserve.txt
+del buek250_mg_utm_v55.zip
+del buek250_color.style
+del buek250_mg_utm_v55.cpg
+del buek250_mg_utm_v55.dbf
+del buek250_mg_utm_v55.prj
+del buek250_mg_utm_v55.sbn
+del buek250_mg_utm_v55.sbx
+del buek250_mg_utm_v55.shp
+del buek250_mg_utm_v55.shp.xml
+del buek250_mg_utm_v55.shx
+del srtm_38_03.zip
+del srtm_38_02.zip
+del srtm_39_02.zip
+del srtm_39_03.zip
+del srtm_38_02.tif
+del srtm_38_02.hdr
+del srtm_38_02.tfw
+del srtm_38_03.tif
+del srtm_38_03.hdr
+del srtm_38_03.tfw
+del srtm_39_03.tif
+del srtm_39_03.tfw
+del srtm_39_03.hdr
+del srtm_39_02.tif
+del srtm_39_02.hdr
+del srtm_39_02.tfw
+del "Allgemeine Geschäftsbedingungen.pdf"
+del "General Standard Terms and Conditions.pdf"
+del license.txt
+del Metadaten19139_buek250.pdf
+del readme.txt
 echo 0 thru 100 = 3 > DEM_rules.txt
 echo 100 thru 200 = 4 >> DEM_rules.txt
 echo 200 thru 300 = 3 >> DEM_rules.txt

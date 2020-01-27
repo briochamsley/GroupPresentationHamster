@@ -4,7 +4,7 @@ import grass.script as gscript
 
 def main():
     #Set Workspace, so you need to change only this path if you're changing folders 
-    data_dir=r'D:\Dokumente\Uni\Master\MSc-Sem1\FOSS\Projekt\Data\\'
+    data_dir=r'D:\Dokumente\Uni\Master\MSc-Sem1\FOSS\Projekt\TestGruppe\\'
 
 
     ## This Section will import the Study Area and set the Region according to this file
@@ -171,9 +171,6 @@ def main():
     gscript.run_command('v.db.addtable', map='Landusereclass@PERMANENT')
     gscript.run_command('v.dissolve', overwrite=True, input='Landusereclass@PERMANENT', column='cat', output='LanduseClassified')
     gscript.run_command('v.db.addtable', map='LanduseClassified@PERMANENT')
-
-    #minus every value of the classified Landuse Raster by one to get classes out of the category number
-    gscript.run_command('r.mapcalc', overwrite=True, expression="LanduseClassRast = LanduseClassRastModified@PERMANENT - 1")
            
     #Reclass the Soil and dissolve common boundaries
     gscript.run_command('v.reclass', overwrite=True, input='Soilmap@PERMANENT', output='Soilreclass', rules=Soil_rules)
@@ -190,6 +187,9 @@ def main():
     #----------------------------------------------------------------------
     #Convert classified Landuse to Raster
     gscript.run_command('v.to.rast', overwrite=True, input='LanduseClassified@PERMANENT', output='LanduseClassRastModified', use='cat')
+    
+    #minus every value of the classified Landuse Raster by one to get classes out of the category number
+    gscript.run_command('r.mapcalc', overwrite=True, expression="LanduseClassRast = LanduseClassRastModified@PERMANENT - 1")
 
     #Convert classified Soils to Raster
     gscript.run_command('v.to.rast', overwrite=True, input='SoilClassified@PERMANENT', output='SoilClassRast', use='cat')
